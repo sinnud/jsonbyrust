@@ -1,0 +1,1 @@
+pub fn add_one (n: u64) -> u64 { n + 1 }

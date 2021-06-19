@@ -1,0 +1,26 @@
+[package]
+name = "jsonbyrust"
+version = "0.1.0"
+authors = ["Luke Du <sinnud@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+#--------------------------------------------#
+# compile command: cargo build --lib --bins  #
+# or: cargo build --lib --bins --release     #
+#--------------------------------------------#
+[lib]
+# name = "jsonparse"
+# path = "src/json/mod.rs"
+name = "ex"
+path = "src/ex/ex1_addone.rs"
+
+[[bin]]
+name = "jsontest"
+# path = "src/bin/main.rs"
+path = "src/examples/ex1_unittest.rs"
+
+# unit test framework
+[dev-dependencies]
+laboratory = "2.0.0"

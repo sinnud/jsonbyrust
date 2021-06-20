@@ -4,7 +4,7 @@
 // extern crate log4rs;
 
 
-// pub mod wdinfo;
+pub mod jsonparse;
 // pub mod sqltrait;
 // pub mod postgresql;
 // pub mod file_status;

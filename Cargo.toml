@@ -11,16 +11,20 @@ edition = "2018"
 # or: cargo build --lib --bins --release     #
 #--------------------------------------------#
 [lib]
-# name = "jsonparse"
-# path = "src/json/mod.rs"
-name = "ex"
-path = "src/ex/ex1_addone.rs"
+name = "myjson"
+path = "src/myjson/mod.rs"
 
+# [[bin]]
+# name = "jsontest"
+# path = "src/bin/main.rs"
 [[bin]]
 name = "jsontest"
-# path = "src/bin/main.rs"
-path = "src/examples/ex1_unittest.rs"
+path = "src/examples/ex2_jsonload.rs"
 
 # unit test framework
 [dev-dependencies]
 laboratory = "2.0.0"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"

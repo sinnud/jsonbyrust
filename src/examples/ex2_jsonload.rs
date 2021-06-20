@@ -1,22 +1,28 @@
 /** # check loading JSON data by rust
 
 - use crate serde_json
+- use simple_logger
 
 */
+extern crate log;
+use log::{info, error, debug};
+use simple_logger::SimpleLogger;
 
 use serde_json::Value;
 use std::collections::HashMap;
 type JsonMap = HashMap<String, serde_json::Value>;
 
 fn main(){
+    SimpleLogger::new().init().unwrap();
+
     let name = match jsonload(){
         Ok(res) => res,
         Err(err) => {
-            println!("main with Error: {}", err);
+            error!("main with Error: {}", err);
             std::process::exit(1);
         }
     };
-    println!("Result: {}", name);
+    info!("Result: {}", name);
 }
 
 fn jsonload()  -> Result<String, &'static str> {
@@ -50,20 +56,21 @@ fn jsonload()  -> Result<String, &'static str> {
     let path = "/var/local/usersetting/gitdev/data/txn8698.json";
     let file = std::fs::File::open(path).unwrap();
     let reader = std::io::BufReader::new(file);
+    debug!("Start loading JSON file: {}...", path);
     let v: Value = match serde_json::from_reader(reader){
         Ok(res) => res,
         Err(err) => {
-            println!("In main, serde_json::from_file(): {}", err);
+            error!("In main, serde_json::from_file(): {}", err);
             return Err("main Failed!");
         }
     };
-    
-    // println!("json data: {:?}", v);
+        
+    debug!("Start analizing JSON data...");
     let crt_path : String = "".to_owned();
     let mut cum_array: Vec<String> = Vec::new();
     let mut cum_path: Vec<String> = Vec::new();
     if v.is_object() {
-        println!("Value is object!!! '{}'", v);
+        info!("Value is object!!! '{}'", v);
         let v_map : JsonMap = serde_json::from_value(v.clone()).unwrap();
         match myjson::jsonparse::json_map_loop(v_map.clone(), crt_path, &mut cum_array, &mut cum_path){
             Ok(res) => res,
@@ -81,16 +88,16 @@ fn jsonload()  -> Result<String, &'static str> {
             match myjson::jsonparse::json_map_loop(v_map, cp, &mut cum_array, &mut cum_path){
                 Ok(res) => res,
                 Err(err) => {
-                    println!("Error in jsonload(): {}", err);
+                    error!("Error in jsonload(): {}", err);
                     return Err("See above.")
                 }
             };
         }
     }
 
-    println!("After json_map_loop, we have {} paths and {} arrays", cum_path.len(), cum_array.len());
+    info!("After json_map_loop, we have {} paths and {} arrays", cum_path.len(), cum_array.len());
     for (i, p) in cum_array.iter().enumerate() {
-        println!("The {}-th path is '{}'", i, p);
+        info!("The {}-th path is '{}'", i, p);
     }
 
     // Access parts of the data by indexing with square brackets.

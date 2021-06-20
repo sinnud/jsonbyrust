@@ -1,8 +1,6 @@
-// log to file
-// #[macro_use]
-// extern crate log;
-// extern crate log4rs;
-
+//log to file
+#[macro_use]
+extern crate log;
 
 pub mod jsonparse;
 // pub mod sqltrait;

@@ -1,3 +1,8 @@
+/** # JSON utils
+ * Function json_map_loop will go through whole JSON to get all full paths, including array path
+ */
+// extern crate log;
+
 use serde_json::Value;
 use std::collections::HashMap;
 type JsonMap = HashMap<String, serde_json::Value>;
@@ -33,7 +38,7 @@ pub fn json_map_loop(jm: JsonMap
                 let v: Vec<Value> = serde_json::from_value(value.clone()).unwrap();
                 for val in v {
                     if val.is_array() {
-                        println!("Value is array!!! '{}'", thispath);
+                        error!("Value is array!!! '{}'", thispath);
                         return Err("Data format is wrong, should be object.");
                     }
                     else if val.is_object() {
@@ -43,7 +48,7 @@ pub fn json_map_loop(jm: JsonMap
                         json_map_loop(v_map, crt_path, cum_array, cum_path).unwrap();
                     }
                     else {
-                        println!("Value is '{}' at '{}'", val, thispath);
+                        error!("Value is '{}' at '{}'", val, thispath);
                         return Err("Data format is wrong, should be object.");
                     }
                 }

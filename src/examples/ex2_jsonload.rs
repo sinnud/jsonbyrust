@@ -1,9 +1,10 @@
-/** # check loading JSON data by rust
+/*! check loading JSON data by rust
 
 - use crate serde_json
 - use simple_logger
 
 */
+
 extern crate log;
 use log::{info, error, debug};
 use simple_logger::SimpleLogger;
@@ -114,7 +115,7 @@ mod tests {
 
     // lets pull our add_one function into scope
     // try move this definition to lib folder `ex`
-    //use super::*;
+    use super::*;
 
     // now let's pull in our lab tools into scope
     // to test our function
@@ -161,9 +162,10 @@ mod tests {
     */
     #[test]
     fn suite1() -> LabResult {
-        describe("json_map_loop()", |suite1| {
-            suite1.it("test json loop", |_| {
-                expect(myjson::jsonparse::json_map_loop().unwrap()).to_equal("OK".to_owned())
+        describe("jsonload()", |suite1| {
+            suite1.it("test json load", |_| {
+                expect(jsonload()
+                .unwrap()).to_equal("OK".to_owned())
             });
         }).state(NullState).milis().run()
 

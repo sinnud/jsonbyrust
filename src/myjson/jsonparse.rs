@@ -1,5 +1,5 @@
-/** # JSON utils
- * Function json_map_loop will go through whole JSON to get all full paths, including array path
+/*! # JSON utils
+ * Function **json_map_loop** will go through whole JSON to get all full paths, including array path
  */
 // extern crate log;
 

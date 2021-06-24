@@ -16,16 +16,27 @@ type JsonMap = HashMap<String, serde_json::Value>;
 fn main(){
     SimpleLogger::new().init().unwrap();
 
-    let name = match jsonload(){
-        Ok(res) => res,
-        Err(err) => {
-            error!("main with Error: {}", err);
-            std::process::exit(1);
-        }
-    };
-    info!("Result: {}", name);
+    let path = "/var/local/usersetting/gitdev/data/txn1.json".to_owned();
+    let ju = myjson::jsonparse::JSONUtils::load_data(path).unwrap();
+    info!("Data length: {}", ju.clone().get_jdata_len());
+    let ju = ju.gen_all_path().unwrap();
+    info!("All path length: {}", ju.clone().get_all_path_len());
+    info!("Array length: {}", ju.clone().get_all_arr_len());
+
+    let ju = ju.gen_map().unwrap();
+    info!("All path length: {}", ju.clone().get_all_path_len());
+
+    // let name = match jsonload(){
+    //     Ok(res) => res,
+    //     Err(err) => {
+    //         error!("main with Error: {}", err);
+    //         std::process::exit(1);
+    //     }
+    // };
+    // info!("Result: {}", name);
 }
 
+#[allow(dead_code)]
 fn jsonload()  -> Result<String, &'static str> {
     /*/ Some JSON input data as a &str. Maybe this comes from the user.
     let data = r#"[

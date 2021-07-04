@@ -242,8 +242,137 @@ impl JSONUtils{
         ofile.write_all(str_map.as_bytes()).expect("unable to write");
         Ok(())
     }
-}
+    /** # import JSON map */
+    pub fn import_json_map(self, path: String) -> Result<Self, &'static str> {
+        debug!("import from {}", path);
+        let contents = std::fs::read_to_string(path).expect("Failed to read the file");
+        let v: json::JsonValue = match json::parse(&contents){
+            Ok(res) => res,
+            Err(err) => {
+                error!("In JSONUtils::import_json_map, json::parse(): {}", err);
+                return Err("JSONUtils::import_json_map Failed!");
+            }
+        };
+        Ok(JSONUtils{
+            jdata: self.jdata,
+            all_full_path: self.all_full_path,
+            all_arr_path: self.all_arr_path,
+            map: Some(v),
+            })
+    }
+    /** # export map into CSV format file
+     Easy to read, modify, using import map from CSV format to load back
+     Format design:
+     type, name, path, relpath, comments
+     type: table will have name and arraypath (path). relpath empty. comments whatever you need
+           column will have name, fullpath (path) and relpath (to table.arraypath). Comments state which table (name) it belong to, or more
+     
+     */
+    pub fn export_map_csv(self, path: String) -> Result<(), &'static str> {
+        debug!("Export to {}", path);
+        let mut wtr = csv::Writer::from_path(path).unwrap();
+        wtr.write_record(&["Type", "Name", "Path", "Relative Path", "comments"]).unwrap();
+        let map = self.map.unwrap().clone();
+        let jv = map["tableList"].clone();
+        for tbl in jv.members() {
+            let tblnm = &(tbl["tableName"].to_string());
+            wtr.write_record(&["table", tblnm, &(tbl["arrayPath"].to_string()), "", ""]).unwrap();
+            if ! tbl["seqList"].is_null() {
+                for clm in tbl["seqList"].members() {
+                    let clmnm = &(clm["columnName"].to_string());
+                    let comment = &(format!("The sequence column '{}' of table '{}'.", clmnm, tblnm));
+                    wtr.write_record(&["seq", clmnm, &(clm["arrayPath"].to_string()), "", comment]).unwrap();
+                }
+            }
+            for clm in tbl["columnList"].members() {
+                let clmnm = &(clm["columnName"].to_string());
+                let comment = &(format!("The real column '{}' of table '{}'.", clmnm, tblnm));
+                wtr.write_record(&["column", clmnm, &(clm["fullPath"].to_string()), &(clm["relativePath"].to_string()), comment]).unwrap();
+            }
+        }
+        wtr.flush().unwrap();
+        Ok(())
+    }
+    /** # import map from CSV format file
+     * according to the export_map_csv method, load map from CSV format file
+     */
+    pub fn import_map_csv(self, path: String) -> Result<Self, &'static str> {
+        // table vector
+        let mut vtbl = json::JsonValue::new_array();
 
+        // global variables
+        // boolean variable for the next table, the current table need to be stored if current with table.
+        let mut with_table = false;
+        // table related variables. Will be stored into JSON value when table is ready
+        let mut tblname = "".to_owned();
+        let mut arrpath = "".to_owned();
+        let mut seqs = json::JsonValue::new_array();
+        let mut columns = json::JsonValue::new_array();
+
+        // read csv file line by line
+        let mut rdr = csv::Reader::from_path(path).unwrap();
+        for rec in rdr.records() {
+            let record = rec.unwrap();
+            if &record.clone()[0] == "table" { // table line
+                if with_table { // previous table finished, store it
+                    let jtbl = json::object!{
+                        "tableName" : tblname.clone(),
+                        "arrayPath" : arrpath.clone(),
+                        "seqList"   : seqs,
+                        "columnList": columns,
+                    };
+                    vtbl.push(jtbl).unwrap();
+                    // clean table related json array for the new table
+                    seqs = json::JsonValue::new_array();
+                    columns = json::JsonValue::new_array();
+                }
+                else {
+                    with_table = true;
+                }
+                // obtain table information: name and path
+                tblname = record.clone()[1].to_string().clone();
+                arrpath = record.clone()[2].to_string().clone();
+            }
+            else if &record[0] == "seq" { // sequence column line for table
+                // obtain sequence column information: name and parent (array) path, store it
+                let clmnm = record.clone()[1].to_string().clone();
+                let apath = record.clone()[2].to_string().clone();
+                let jclm = json::object!{
+                    "columnName": clmnm,
+                    "arrayPath": apath,
+                };
+                seqs.push(jclm).unwrap();
+            }
+            else if &record[0] == "column" { // general column line for table
+                // obtain general column information: name and full path, relative path to parent (array), store it
+                let clmnm = record.clone()[1].to_string().clone();
+                let fpath = record.clone()[2].to_string().clone();
+                let rpath = record.clone()[3].to_string().clone();
+                let jclm = json::object!{
+                    "columnName"  : clmnm,
+                    "fullPath"    : fpath,
+                    "relativePath": rpath, 
+                };
+                columns.push(jclm).unwrap();
+            }
+        }
+        // last table, usually root table
+        let jtbl = json::object!{
+            "tableName": tblname,
+            "arrayPath": arrpath,
+            "columnList": columns,
+        };
+        vtbl.push(jtbl).unwrap();
+        Ok(JSONUtils{
+            jdata: self.jdata,
+            all_full_path: self.all_full_path,
+            all_arr_path: self.all_arr_path,
+            map: Some(json::object!(
+                "tableList": vtbl
+            )),
+            })
+    }
+}
 /** # compute name from path according to namepool
  * String of path have separator '/'
  * The last field will be the name
@@ -258,10 +387,12 @@ fn calculate_name_from_path(path: String,
     let v: Vec<&str> = path.split('/').collect();
     let mut name = v.last().unwrap().to_lowercase();
     while namepool.contains(&name){
+        let ustr = uuid::Uuid::new_v4().to_string();
         name = format!("{}_{}",
             v.last().unwrap().to_lowercase(),
-            uuid::Uuid::new_v4().to_string(),
+            ustr.substring(0, 6),
         );
+        debug!("From {} to {} with {}", path, name, ustr);
     }
     return name;
 }
